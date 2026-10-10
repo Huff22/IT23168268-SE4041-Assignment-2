@@ -12,7 +12,8 @@ import SwiftData
 struct PantryPalApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            PantryItem.self,
+            SavedRecipe.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
