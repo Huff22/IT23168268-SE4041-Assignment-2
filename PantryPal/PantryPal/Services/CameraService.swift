@@ -10,6 +10,7 @@ import AVFoundation
 import Vision
 import CoreImage
 import Combine
+import UIKit
 
 class CameraService: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published var detectedIngredients: [String] = []
@@ -73,4 +74,30 @@ class CameraService: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
         try? handler.perform([request])
     }
+    
+    // Add this new function to handle static images from the Photo Library
+        func processStaticImage(_ image: UIImage) {
+            guard let cgImage = image.cgImage else { return }
+            
+            let request = VNClassifyImageRequest { [weak self] request, error in
+                guard let results = request.results as? [VNClassificationObservation] else { return }
+                
+                // Filter for high-confidence predictions
+                let topResults = results.filter { $0.confidence > 0.8 }.map { $0.identifier }
+                
+                DispatchQueue.main.async {
+                    if !topResults.isEmpty {
+                        self?.detectedIngredients = Array(topResults.prefix(3))
+                    } else {
+                        self?.detectedIngredients = ["No ingredients found"]
+                    }
+                }
+            }
+            
+            // Note: For static images, we use orientation .up as a default
+            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
+            DispatchQueue.global(qos: .userInitiated).async {
+                try? handler.perform([request])
+            }
+        }
 }
